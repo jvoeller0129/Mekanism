@@ -16,9 +16,11 @@ import mekanism.common.integration.energy.EnergyCompatUtils;
 import mekanism.common.inventory.slot.BasicInventorySlot;
 import mekanism.common.item.ItemRobit;
 import mekanism.common.item.block.ItemBlockBin;
+import mekanism.common.item.block.ItemBlockPersonalStorage;
+import mekanism.common.item.interfaces.IItemSustainedInventory;
+import mekanism.common.lib.inventory.personalstorage.PersonalStorageManager;
 import mekanism.common.recipe.MekanismRecipeType;
 import mekanism.common.tile.base.TileEntityMekanism;
-import mekanism.common.tile.interfaces.ISustainedInventory;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.world.item.BlockItem;
@@ -39,7 +41,7 @@ public class ItemRecipeData implements RecipeUpgradeData<ItemRecipeData> {
         this(readContents(slots));
     }
 
-    private ItemRecipeData(List<IInventorySlot> slots) {
+    ItemRecipeData(List<IInventorySlot> slots) {
         this.slots = slots;
     }
 
@@ -57,9 +59,15 @@ public class ItemRecipeData implements RecipeUpgradeData<ItemRecipeData> {
             return true;
         }
         Item item = stack.getItem();
+        List<IInventorySlot> stackSlots = new ArrayList<>();
+        if (item instanceof ItemBlockPersonalStorage<?>) {
+            //Add the slots in the same way we would for a PersonalStorageItemInventory and if we can transfer to the item,
+            // we will copy them over directly
+            PersonalStorageManager.createSlots(stackSlots::add, BasicInventorySlot.alwaysTrueBi, null);
+            return applyToStack(slots, stackSlots, (ListTag toWrite) -> PersonalStorageManager.createInventoryFor(stack, stackSlots));
+        }
         boolean isBin = item instanceof ItemBlockBin;
         Optional<IItemHandler> capability = stack.getCapability(ForgeCapabilities.ITEM_HANDLER).resolve();
-        List<IInventorySlot> stackSlots = new ArrayList<>();
         if (capability.isPresent()) {
             IItemHandler itemHandler = capability.get();
             for (int i = 0, slots = itemHandler.getSlots(); i < slots; i++) {
@@ -96,12 +104,12 @@ public class ItemRecipeData implements RecipeUpgradeData<ItemRecipeData> {
             stackSlots.add(new DummyInventorySlot(BasicInventorySlot.DEFAULT_LIMIT, itemStack -> MekanismRecipeType.SMELTING.getInputCache().containsInput(null, itemStack), false));
             //Smelting output slot
             stackSlots.add(new DummyInventorySlot(BasicInventorySlot.DEFAULT_LIMIT, BasicInventorySlot.alwaysTrue, false));
-        } else if (item instanceof ISustainedInventory sustainedInventory) {
+        } else if (item instanceof IItemSustainedInventory sustainedInventory) {
             //Fallback just save it all
             for (IInventorySlot slot : slots) {
                 if (!slot.isEmpty()) {
                     //We have no information about what our item supports, but we have at least some stacks we want to transfer
-                    sustainedInventory.setInventory(DataHandlerUtils.writeContainers(slots), stack);
+                    sustainedInventory.setSustainedInventory(DataHandlerUtils.writeContainers(slots), stack);
                     return true;
                 }
             }
@@ -109,10 +117,17 @@ public class ItemRecipeData implements RecipeUpgradeData<ItemRecipeData> {
         } else {
             return false;
         }
-        return applyToStack(slots, stackSlots, toWrite -> ((ISustainedInventory) stack.getItem()).setInventory(toWrite, stack));
+        return applyToStack(slots, stackSlots, (ListTag toWrite) -> ((IItemSustainedInventory) item).setSustainedInventory(toWrite, stack));
     }
 
     static boolean applyToStack(List<IInventorySlot> dataSlots, List<IInventorySlot> stackSlots, Consumer<ListTag> stackWriter) {
+        return applyToStack(dataSlots, stackSlots, t -> {
+            stackWriter.accept(t);
+            return true;
+        });
+    }
+
+    private static boolean applyToStack(List<IInventorySlot> dataSlots, List<IInventorySlot> stackSlots, Predicate<ListTag> stackWriter) {
         if (stackSlots.isEmpty()) {
             return true;
         }
@@ -140,7 +155,7 @@ public class ItemRecipeData implements RecipeUpgradeData<ItemRecipeData> {
         }
         if (hasData) {
             //We managed to transfer it all into valid slots, so save it to the stack
-            stackWriter.accept(DataHandlerUtils.writeContainers(stackSlots));
+            return stackWriter.test(DataHandlerUtils.writeContainers(stackSlots));
         }
         return true;
     }

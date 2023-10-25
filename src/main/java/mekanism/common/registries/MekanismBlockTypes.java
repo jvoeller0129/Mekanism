@@ -7,6 +7,7 @@ import java.util.function.Supplier;
 import mekanism.api.Upgrade;
 import mekanism.api.math.FloatingLong;
 import mekanism.common.MekanismLang;
+import mekanism.common.block.BlockPersonalStorage;
 import mekanism.common.block.attribute.Attribute;
 import mekanism.common.block.attribute.AttributeCustomSelectionBox;
 import mekanism.common.block.attribute.AttributeMultiblock;
@@ -352,7 +353,7 @@ public class MekanismBlockTypes {
           .withEnergyConfig(MekanismConfig.storage.teleporter)
           .withSupportedUpgrades(EnumSet.of(Upgrade.ANCHOR))
           .without(AttributeStateActive.class, AttributeStateFacing.class, AttributeParticleFX.class)
-          .withLight(10)
+          .withLight(3)
           .withComputerSupport("teleporter")
           .build();
     // Chargepad
@@ -417,14 +418,14 @@ public class MekanismBlockTypes {
     public static final BlockTypeTile<TileEntityPersonalBarrel> PERSONAL_BARREL = BlockTileBuilder
           .createBlock(() -> MekanismTileEntityTypes.PERSONAL_BARREL, MekanismLang.DESCRIPTION_PERSONAL_BARREL)
           .withGui(() -> MekanismContainerTypes.PERSONAL_STORAGE_BLOCK)
-          .with(Attributes.SECURITY, Attributes.INVENTORY, AttributeStateOpen.INSTANCE, new AttributeStateFacing(BlockStateProperties.FACING), new AttributeCustomResistance(-1))
+          .with(Attributes.SECURITY, BlockPersonalStorage.PERSONAL_STORAGE_INVENTORY, AttributeStateOpen.INSTANCE, new AttributeStateFacing(BlockStateProperties.FACING), new AttributeCustomResistance(-1))
           .withComputerSupport("personalBarrel")
           .build();
     // Personal Chest
     public static final BlockTypeTile<TileEntityPersonalChest> PERSONAL_CHEST = BlockTileBuilder
           .createBlock(() -> MekanismTileEntityTypes.PERSONAL_CHEST, MekanismLang.DESCRIPTION_PERSONAL_CHEST)
           .withGui(() -> MekanismContainerTypes.PERSONAL_STORAGE_BLOCK)
-          .with(Attributes.SECURITY, Attributes.INVENTORY, new AttributeStateFacing(), new AttributeCustomResistance(-1))
+          .with(Attributes.SECURITY, BlockPersonalStorage.PERSONAL_STORAGE_INVENTORY, new AttributeStateFacing(), new AttributeCustomResistance(-1))
           .withCustomShape(BlockShapes.PERSONAL_CHEST)
           .withComputerSupport("personalChest")
           .build();
@@ -681,7 +682,7 @@ public class MekanismBlockTypes {
     // Teleporter Frame
     public static final BlockType TELEPORTER_FRAME = BlockTypeBuilder
           .createBlock(MekanismLang.DESCRIPTION_TELEPORTER_FRAME)
-          .withLight(10)
+          .withLight(3)
           .build();
     // Steel Casing
     public static final BlockType STEEL_CASING = BlockTypeBuilder

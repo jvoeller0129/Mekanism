@@ -7,10 +7,12 @@ import mekanism.api.IContentsListener;
 import mekanism.api.NBTConstants;
 import mekanism.api.RelativeSide;
 import mekanism.api.text.EnumColor;
+import mekanism.client.sound.SoundHandler;
 import mekanism.common.capabilities.Capabilities;
 import mekanism.common.capabilities.holder.slot.IInventorySlotHolder;
 import mekanism.common.capabilities.holder.slot.InventorySlotHelper;
 import mekanism.common.capabilities.resolver.BasicCapabilityResolver;
+import mekanism.common.config.MekanismConfig;
 import mekanism.common.content.filter.SortableFilterManager;
 import mekanism.common.content.network.transmitter.LogisticalTransporterBase;
 import mekanism.common.content.transporter.SorterFilter;
@@ -60,6 +62,7 @@ public class TileEntityLogisticalSorter extends TileEntityMekanism implements IS
     @Nullable
     public SidedBlockPos rrTarget;
     private int delayTicks;
+    private long nextSound = 0;
 
     public TileEntityLogisticalSorter(BlockPos pos, BlockState state) {
         super(MekanismBlocks.LOGISTICAL_SORTER, pos, state);
@@ -144,6 +147,22 @@ public class TileEntityLogisticalSorter extends TileEntityMekanism implements IS
         super.load(nbt);
         if (nbt.contains(NBTConstants.ROUND_ROBIN_TARGET, Tag.TAG_COMPOUND)) {
             rrTarget = SidedBlockPos.deserialize(nbt.getCompound(NBTConstants.ROUND_ROBIN_TARGET));
+        }
+    }
+
+    @Override
+    protected boolean canPlaySound() {
+        return false;//handle own sounds
+    }
+
+    @Override
+    protected void onUpdateClient() {
+        super.onUpdateClient();
+        if (MekanismConfig.client.enableMachineSounds.get() && getActive() && level.getGameTime() >= nextSound) {
+            if (!isFullyMuffled()) {
+                SoundHandler.startTileSound(soundEvent, getSoundCategory(), getInitialVolume(), level.getRandom(), getSoundPos(), false);
+            }
+            nextSound = level.getGameTime() + 20L * (level.random.nextInt(5,15));
         }
     }
 
@@ -270,7 +289,7 @@ public class TileEntityLogisticalSorter extends TileEntityMekanism implements IS
     }
 
     //Methods relating to IComputerTile
-    @ComputerMethod
+    @ComputerMethod(requiresPublicSecurity = true)
     void setSingle(boolean value) throws ComputerException {
         validateSecurityIsPublic();
         if (singleItem != value) {
@@ -278,7 +297,7 @@ public class TileEntityLogisticalSorter extends TileEntityMekanism implements IS
         }
     }
 
-    @ComputerMethod
+    @ComputerMethod(requiresPublicSecurity = true)
     void setRoundRobin(boolean value) throws ComputerException {
         validateSecurityIsPublic();
         if (roundRobin != value) {
@@ -286,7 +305,7 @@ public class TileEntityLogisticalSorter extends TileEntityMekanism implements IS
         }
     }
 
-    @ComputerMethod
+    @ComputerMethod(requiresPublicSecurity = true)
     void setAutoMode(boolean value) throws ComputerException {
         validateSecurityIsPublic();
         if (autoEject != value) {
@@ -294,27 +313,27 @@ public class TileEntityLogisticalSorter extends TileEntityMekanism implements IS
         }
     }
 
-    @ComputerMethod
+    @ComputerMethod(requiresPublicSecurity = true)
     void clearDefaultColor() throws ComputerException {
         validateSecurityIsPublic();
         changeColor(null);
     }
 
-    @ComputerMethod
+    @ComputerMethod(requiresPublicSecurity = true)
     void incrementDefaultColor() throws ComputerException {
         validateSecurityIsPublic();
         color = TransporterUtils.increment(color);
         markForSave();
     }
 
-    @ComputerMethod
+    @ComputerMethod(requiresPublicSecurity = true)
     void decrementDefaultColor() throws ComputerException {
         validateSecurityIsPublic();
         color = TransporterUtils.decrement(color);
         markForSave();
     }
 
-    @ComputerMethod
+    @ComputerMethod(requiresPublicSecurity = true)
     void setDefaultColor(EnumColor color) throws ComputerException {
         validateSecurityIsPublic();
         if (!TransporterUtils.colors.contains(color)) {
@@ -328,13 +347,13 @@ public class TileEntityLogisticalSorter extends TileEntityMekanism implements IS
         return filterManager.getFilters();
     }
 
-    @ComputerMethod
+    @ComputerMethod(requiresPublicSecurity = true)
     boolean addFilter(SorterFilter<?> filter) throws ComputerException {
         validateSecurityIsPublic();
         return filterManager.addFilter(filter);
     }
 
-    @ComputerMethod
+    @ComputerMethod(requiresPublicSecurity = true)
     boolean removeFilter(SorterFilter<?> filter) throws ComputerException {
         validateSecurityIsPublic();
         return filterManager.removeFilter(filter);

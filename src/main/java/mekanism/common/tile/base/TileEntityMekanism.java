@@ -252,7 +252,7 @@ public abstract class TileEntityMekanism extends CapabilityTileEntity implements
 
     //Variables for handling ITileSound
     @Nullable
-    private final SoundEvent soundEvent;
+    protected final SoundEvent soundEvent;
 
     /**
      * Only used on the client
@@ -994,14 +994,14 @@ public abstract class TileEntityMekanism extends CapabilityTileEntity implements
     }
 
     @Override
-    public void setInventory(ListTag nbtTags, Object... data) {
+    public void setSustainedInventory(ListTag nbtTags) {
         if (nbtTags != null && !nbtTags.isEmpty() && persistInventory()) {
             DataHandlerUtils.readContainers(getInventorySlots(null), nbtTags);
         }
     }
 
     @Override
-    public ListTag getInventory(Object... data) {
+    public ListTag getSustainedInventory() {
         return persistInventory() ? DataHandlerUtils.writeContainers(getInventorySlots(null)) : new ListTag();
     }
 
@@ -1266,7 +1266,7 @@ public abstract class TileEntityMekanism extends CapabilityTileEntity implements
         }
     }
 
-    private boolean isFullyMuffled() {
+    protected boolean isFullyMuffled() {
         if (hasSound() && supportsUpgrade(Upgrade.MUFFLING)) {
             return getComponent().getUpgrades(Upgrade.MUFFLING) == Upgrade.MUFFLING.getMax();
         }
@@ -1341,7 +1341,7 @@ public abstract class TileEntityMekanism extends CapabilityTileEntity implements
         return stored.divideToLevel(max);
     }
 
-    @ComputerMethod(restriction = MethodRestriction.REDSTONE_CONTROL)
+    @ComputerMethod(restriction = MethodRestriction.REDSTONE_CONTROL, requiresPublicSecurity = true)
     void setRedstoneMode(RedstoneControl type) throws ComputerException {
         validateSecurityIsPublic();
         if (type == RedstoneControl.PULSE && !canPulse()) {

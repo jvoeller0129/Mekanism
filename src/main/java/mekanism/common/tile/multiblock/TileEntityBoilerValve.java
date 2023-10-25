@@ -7,6 +7,7 @@ import mekanism.api.IContentsListener;
 import mekanism.api.chemical.gas.Gas;
 import mekanism.api.chemical.gas.GasStack;
 import mekanism.api.chemical.gas.IGasTank;
+import mekanism.api.text.EnumColor;
 import mekanism.common.MekanismLang;
 import mekanism.common.block.attribute.AttributeStateBoilerValveMode;
 import mekanism.common.block.attribute.AttributeStateBoilerValveMode.BoilerValveMode;
@@ -18,7 +19,6 @@ import mekanism.common.lib.multiblock.IMultiblockEjector;
 import mekanism.common.registries.MekanismBlocks;
 import mekanism.common.tile.base.SubstanceType;
 import mekanism.common.util.ChemicalUtil;
-import mekanism.common.util.MekanismUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.InteractionResult;
@@ -81,12 +81,12 @@ public class TileEntityBoilerValve extends TileEntityBoilerCasing implements IMu
         return getMultiblock().getCurrentRedstoneLevel();
     }
 
-    @ComputerMethod
+    @ComputerMethod(methodDescription = "Get the current configuration of this valve")
     BoilerValveMode getMode() {
         return getBlockState().getValue(AttributeStateBoilerValveMode.modeProperty);
     }
 
-    @ComputerMethod
+    @ComputerMethod(methodDescription = "Change the configuration of this valve")
     void setMode(BoilerValveMode mode) {
         if (mode != getMode()) {
             level.setBlockAndUpdate(worldPosition, getBlockState().setValue(AttributeStateBoilerValveMode.modeProperty, mode));
@@ -98,7 +98,7 @@ public class TileEntityBoilerValve extends TileEntityBoilerCasing implements IMu
         if (!isRemote()) {
             BoilerValveMode mode = getMode().getNext();
             setMode(mode);
-            player.sendSystemMessage(MekanismUtils.logFormat(MekanismLang.BOILER_VALVE_MODE_CHANGE.translate(mode)));
+            player.displayClientMessage(MekanismLang.BOILER_VALVE_MODE_CHANGE.translateColored(EnumColor.GRAY, mode), true);
         }
         return InteractionResult.SUCCESS;
     }
@@ -134,12 +134,12 @@ public class TileEntityBoilerValve extends TileEntityBoilerCasing implements IMu
     }
 
     //Methods relating to IComputerTile
-    @ComputerMethod
+    @ComputerMethod(methodDescription = "Toggle the current valve configuration to the next option in the list")
     void incrementMode() {
         setMode(getMode().getNext());
     }
 
-    @ComputerMethod
+    @ComputerMethod(methodDescription = "Toggle the current valve configuration to the previous option in the list")
     void decrementMode() {
         setMode(getMode().getPrevious());
     }

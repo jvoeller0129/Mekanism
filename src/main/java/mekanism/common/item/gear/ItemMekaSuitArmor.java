@@ -100,7 +100,14 @@ public class ItemMekaSuitArmor extends ItemSpecialArmor implements IModuleContai
     public static final List<ResourceKey<DamageType>> BASE_ALWAYS_SUPPORTED = List.of(DamageTypes.FALLING_ANVIL, DamageTypes.CACTUS, DamageTypes.CRAMMING,
           DamageTypes.DRAGON_BREATH, DamageTypes.DRY_OUT, DamageTypes.FALL, DamageTypes.FALLING_BLOCK, DamageTypes.FLY_INTO_WALL, DamageTypes.GENERIC,
           DamageTypes.HOT_FLOOR, DamageTypes.IN_FIRE, DamageTypes.IN_WALL, DamageTypes.LAVA, DamageTypes.LIGHTNING_BOLT, DamageTypes.ON_FIRE,
-          DamageTypes.SWEET_BERRY_BUSH, DamageTypes.WITHER, DamageTypes.FREEZE, DamageTypes.FALLING_STALACTITE, DamageTypes.STALAGMITE);
+          DamageTypes.SWEET_BERRY_BUSH, DamageTypes.WITHER, DamageTypes.FREEZE, DamageTypes.FALLING_STALACTITE, DamageTypes.STALAGMITE, DamageTypes.SONIC_BOOM);
+
+    public static float getBaseDamageRatio(ResourceKey<DamageType> damageType) {
+        if (damageType == DamageTypes.SONIC_BOOM) {
+            return 0.75F;
+        }
+        return 1F;
+    }
 
     private final AttributeCache attributeCache;
     //TODO: Expand this system so that modules can maybe define needed tanks?
@@ -314,10 +321,10 @@ public class ItemMekaSuitArmor extends ItemSpecialArmor implements IModuleContai
     }
 
     @Override
-    public void changeMode(@NotNull Player player, @NotNull ItemStack stack, int shift, boolean displayChangeMessage) {
+    public void changeMode(@NotNull Player player, @NotNull ItemStack stack, int shift, DisplayChange displayChange) {
         for (Module<?> module : getModules(stack)) {
             if (module.handlesModeChange()) {
-                module.changeMode(player, stack, shift, displayChangeMessage);
+                module.changeMode(player, stack, shift, displayChange);
                 return;
             }
         }
@@ -417,6 +424,18 @@ public class ItemMekaSuitArmor extends ItemSpecialArmor implements IModuleContai
     @Override
     public float getToughness() {
         return getMaterial().getToughness();
+    }
+
+    @Override
+    public boolean shouldCauseReequipAnimation(ItemStack oldStack, ItemStack newStack, boolean slotChanged) {
+        //Ignore NBT for energized items causing re-equip animations
+        return slotChanged || oldStack.getItem() != newStack.getItem();
+    }
+
+    @Override
+    public boolean shouldCauseBlockBreakReset(ItemStack oldStack, ItemStack newStack) {
+        //Ignore NBT for energized items causing block break reset
+        return oldStack.getItem() != newStack.getItem();
     }
 
     public static float getDamageAbsorbed(Player player, DamageSource source, float amount) {

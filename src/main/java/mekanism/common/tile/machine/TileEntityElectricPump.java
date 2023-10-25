@@ -34,6 +34,7 @@ import mekanism.common.integration.computer.annotation.ComputerMethod;
 import mekanism.common.integration.computer.annotation.WrappingComputerMethod;
 import mekanism.common.inventory.container.MekanismContainer;
 import mekanism.common.inventory.container.sync.SyncableBoolean;
+import mekanism.common.inventory.container.sync.SyncableFluidStack;
 import mekanism.common.inventory.slot.EnergyInventorySlot;
 import mekanism.common.inventory.slot.FluidInventorySlot;
 import mekanism.common.inventory.slot.OutputInventorySlot;
@@ -80,7 +81,7 @@ public class TileEntityElectricPump extends TileEntityMekanism implements IConfi
     /**
      * This pump's tank
      */
-    @WrappingComputerMethod(wrapper = ComputerFluidTankWrapper.class, methodNames = {"getFluid", "getFluidCapacity", "getFluidNeeded", "getFluidFilledPercentage"})
+    @WrappingComputerMethod(wrapper = ComputerFluidTankWrapper.class, methodNames = {"getFluid", "getFluidCapacity", "getFluidNeeded", "getFluidFilledPercentage"}, docPlaceholder = "buffer tank")
     public BasicFluidTank fluidTank;
     /**
      * The type of fluid this pump is pumping
@@ -99,11 +100,11 @@ public class TileEntityElectricPump extends TileEntityMekanism implements IConfi
     private final Set<BlockPos> recurringNodes = new ObjectOpenHashSet<>();
 
     private MachineEnergyContainer<TileEntityElectricPump> energyContainer;
-    @WrappingComputerMethod(wrapper = ComputerIInventorySlotWrapper.class, methodNames = "getInputItem")
+    @WrappingComputerMethod(wrapper = ComputerIInventorySlotWrapper.class, methodNames = "getInputItem", docPlaceholder = "input slot")
     FluidInventorySlot inputSlot;
-    @WrappingComputerMethod(wrapper = ComputerIInventorySlotWrapper.class, methodNames = "getOutputItem")
+    @WrappingComputerMethod(wrapper = ComputerIInventorySlotWrapper.class, methodNames = "getOutputItem", docPlaceholder = "output slot")
     OutputInventorySlot outputSlot;
-    @WrappingComputerMethod(wrapper = ComputerIInventorySlotWrapper.class, methodNames = "getEnergyItem")
+    @WrappingComputerMethod(wrapper = ComputerIInventorySlotWrapper.class, methodNames = "getEnergyItem", docPlaceholder = "energy slot")
     EnergyInventorySlot energySlot;
 
     public TileEntityElectricPump(BlockPos pos, BlockState state) {
@@ -322,7 +323,7 @@ public class TileEntityElectricPump extends TileEntityMekanism implements IConfi
     @Override
     public InteractionResult onSneakRightClick(Player player) {
         reset();
-        player.sendSystemMessage(MekanismUtils.logFormat(MekanismLang.PUMP_RESET));
+        player.displayClientMessage(MekanismLang.PUMP_RESET.translate(), true);
         return InteractionResult.SUCCESS;
     }
 
@@ -368,14 +369,20 @@ public class TileEntityElectricPump extends TileEntityMekanism implements IConfi
         return usedEnergy;
     }
 
+    @NotNull
+    public FluidStack getActiveType() {
+        return this.activeType;
+    }
+
     @Override
     public void addContainerTrackers(MekanismContainer container) {
         super.addContainerTrackers(container);
         container.track(SyncableBoolean.create(this::usedEnergy, value -> usedEnergy = value));
+        container.track(SyncableFluidStack.create(this::getActiveType, value -> activeType = value));
     }
 
     //Methods relating to IComputerTile
-    @ComputerMethod(nameOverride = "reset")
+    @ComputerMethod(nameOverride = "reset", requiresPublicSecurity = true)
     void resetPump() throws ComputerException {
         validateSecurityIsPublic();
         reset();
